@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# --- 1. basic arg check -------------------------------------------------
+[[ $# -ge 1 ]] || { echo "usage: rr <file> [args …]"; exit 1; }
+file="$1"; shift
+
+[[ -f "$file" ]] || { echo "rr: \"$file\" not found"; exit 1; }
+
+# --- 2. choose interpreter ---------------------------------------------
+case "$file" in
+  *.py) runner=(python3 "$file") ;;
+  *.js) runner=(node "$file")    ;;
+  *)    echo "rr: unsupported extension"; exit 1 ;;
+esac
+
+# Let the user pass extra CLI args to the program itself
+runner+=("$@")
+
+# --- 3. run under entr --------------------------------------------------
+# -c   : clear the screen before each run (avoids separate `clear;`)
+# -s   : run via the shell, so we can prepend a timestamp easily
+ls "$file" | entr -c sh -c 'date; '"${runner[*]}"
+
